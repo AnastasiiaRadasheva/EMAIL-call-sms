@@ -2,14 +2,9 @@
 
 namespace _6osaaa
 {
-    public partial class MainPage
+    public partial class MainPage : ContentPage
     {
-        public MainPage()
-        {
-            Title = "Sõbrade kontaktiraamat";
-            EhitaLeht();
-        }
-
+        // ── Поля формы ──────────────────────────────────────────────
         Entry? fookusEntry;
         EntryCell? nimeCell;
         EntryCell? emailCell;
@@ -20,42 +15,127 @@ namespace _6osaaa
         Label? tervitusLabel;
         string valitudTervitus = "";
         string fotoPath = "";
-        int laaditavKontaktIndex = -1; // какой контакт редактируем (-1 = новый)
+        int laaditavKontaktIndex = -1;
+        Button? uuendaBtn;
 
         readonly List<string> tervitused = new()
         {
-            "🎂 Palju õnne sünnipäevaks! Soovin sulle kõike paremat!",
-            "🎄 Häid jõule ja õnnelikku uut aastat!",
-            "🌸 Tere kevad! Loodan, et sul on suurepärane päev!",
-            "🏖️ Häid puhkusepäevi! Naudi puhkust täiel rinnal!",
-            "🎓 Palju õnne lõpetamise puhul! Suur saavutus!",
-            "💪 Jätka nii! Sa oled parim sõber!",
-            "🌟 Sa oled täiesti eriline inimene! 🌟"
-        };
+            " Palju õnne sünnipäevaks! Soovin sulle kõike paremat!",
+ " Häid jõule ja õnnelikku uut aastat!",
+ " Tere kevad! Loodan, et sul on suurepärane päev!",
+ " Häid puhkusepäevi! Naudi puhkust täiel rinnal!",
+ " Palju õnne lõpetamise puhul! Suur saavutus!",
+ " Jätka nii! Sa oled parim sõber!",
+ " Sa oled täiesti eriline inimene! "
+ };
 
-        // Список контактов внизу (обновляется после сохранения)
         VerticalStackLayout? kontaktideNimekiri;
+
+        // ── Teemanvärvid ─────────────────────────────────────────────
+        static readonly Color Primaarne = Color.FromArgb("#5B4FE9"); // indigo
+        static readonly Color Sekundaarne = Color.FromArgb("#9B8FF5"); // lavendel
+        static readonly Color Accent = Color.FromArgb("#F5A623"); // kuldne
+        static readonly Color Taust = Color.FromArgb("#F4F3FF"); // väga hele lilla
+        static readonly Color Kaart = Colors.White;
+        static readonly Color Tekst = Color.FromArgb("#1A1035");
+        static readonly Color TekstHall = Color.FromArgb("#7B7497");
+
+        // ════════════════════════════════════════════════════════════
+        public MainPage()
+        {
+            Title = "Sõbrade kontaktiraamat";
+            BackgroundColor = Taust;
+            EhitaLeht();
+        }
 
         protected override void OnAppearing()
         {
             base.OnAppearing();
-            Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(300), () =>
-            {
-                fookusEntry?.Focus();
-            });
+            Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(300),
+                () => fookusEntry?.Focus());
         }
 
+        // ════════════════════════════════════════════════════════════
+        //  LEHT
+        // ════════════════════════════════════════════════════════════
         void EhitaLeht()
         {
-            // ---- Круглое фото ----
+            fookusEntry = new Entry { IsVisible = false, WidthRequest = 1, HeightRequest = 1 };
+
+            var sisukord = new VerticalStackLayout
+            {
+                Spacing = 0,
+                Children =
+                {
+                    EhitaHero(),
+                    EhitaAndmedSektsioon(),
+                    EhitaSõnumSektsioon(),
+                    EhitaTervitusSektsioon(),
+                    EhitaSalvestaNupp(),
+                    EhitaNimekirjaLabel(),
+                    EhitaNimekiri()
+                }
+            };
+
+            Content = new ScrollView
+            {
+                BackgroundColor = Taust,
+                Content = new Grid { Children = { sisukord, fookusEntry } }
+            };
+
+            UuendaNimekiri();
+        }
+
+        // ── HERO (foto + fotopäis) ───────────────────────────────────
+        View EhitaHero()
+        {
+            // Gradient taustaks
+            var gradient = new BoxView
+            {
+                Background = new LinearGradientBrush(
+                    new GradientStopCollection
+                    {
+                        new GradientStop(Primaarne,   0f),
+                        new GradientStop(Sekundaarne, 1f)
+                    },
+                    new Point(0, 0), new Point(1, 1))
+            };
+
             ringFoto = new Image
             {
                 Source = ImageSource.FromFile("dotnet_bot.png"),
-                WidthRequest = 100,
-                HeightRequest = 100,
+                WidthRequest = 110,
+                HeightRequest = 110,
                 Aspect = Aspect.AspectFill,
                 HorizontalOptions = LayoutOptions.Center,
-                Clip = new EllipseGeometry { Center = new Point(50, 50), RadiusX = 50, RadiusY = 50 }
+                Clip = new EllipseGeometry
+                { Center = new Point(55, 55), RadiusX = 55, RadiusY = 55 }
+            };
+
+            // Белый круг под фото (shadow effect)
+            var ringTaust = new Ellipse
+            {
+                WidthRequest = 118,
+                HeightRequest = 118,
+                Fill = new SolidColorBrush(Colors.White),
+                HorizontalOptions = LayoutOptions.Center
+            };
+
+            var heading = new Label
+            {
+                Text = "Sõbrade kontaktiraamat",
+                FontSize = 22,
+                FontAttributes = FontAttributes.Bold,
+                TextColor = Colors.White,
+                HorizontalOptions = LayoutOptions.Center
+            };
+
+            var subheading = new Label
+            {
+                Text = "Halda oma sõpru ühes kohas",
+                FontSize = 13,
+                TextColor = Color.FromArgb("#DDD8FF"),
+                HorizontalOptions = LayoutOptions.Center
             };
 
             var fotoNupud = new HorizontalStackLayout
@@ -64,165 +144,236 @@ namespace _6osaaa
                 Spacing = 10,
                 Children =
                 {
-                    TeeBtnNupp("📷 Teen foto",  "#6200EE", TeeFoto_Clicked),
-                    TeeBtnNupp("🖼️ Valin foto", "#6200EE", ValiGaleriist_Clicked)
+                    TeeGhostNupp("Teen foto", TeeFoto_Clicked),
+                    TeeGhostNupp("Galeriist", ValiGaleriist_Clicked)
                 }
             };
 
-            var header = new VerticalStackLayout
+            var fotoBlokk = new Grid
             {
-                BackgroundColor = Color.FromArgb("#F0F0F0"),
-                Padding = new Thickness(0, 20, 0, 16),
+                RowDefinitions =
+                {
+                    new RowDefinition { Height = GridLength.Auto },
+                    new RowDefinition { Height = GridLength.Auto }
+                },
+                HorizontalOptions = LayoutOptions.Center
+            };
+            fotoBlokk.Add(ringTaust, 0, 0);
+            fotoBlokk.Add(ringFoto, 0, 0);
+
+            var content = new VerticalStackLayout
+            {
                 Spacing = 10,
-                Children = { ringFoto, fotoNupud }
+                Padding = new Thickness(20, 40, 20, 28),
+                Children = { heading, subheading, fotoBlokk, fotoNupud }
             };
 
-            // ---- Andmed ----
-            nimeCell = new EntryCell { Label = "Nimi", Placeholder = "Sisesta sõbra nimi" };
-            emailCell = new EntryCell { Label = "Email", Placeholder = "Sisesta email", Keyboard = Keyboard.Email };
-            telefonCell = new EntryCell { Label = "Telefon", Placeholder = "Sisesta tel. number", Keyboard = Keyboard.Telephone };
-            kirjeldusCell = new EntryCell { Label = "Kirjeldus", Placeholder = "Kirjeldus sõbra kohta" };
-
-            var andmedSection = new TableSection("👤 Sõbra andmed")
+            return new Grid
             {
-                nimeCell, emailCell, telefonCell, kirjeldusCell
+                HeightRequest = 300,
+                Children = { gradient, content }
             };
+        }
 
-            // ---- Sõnum ----
-            sõnumCell = new EntryCell { Label = "Sõnum", Placeholder = "Kirjuta sõnum siia" };
+        // ── ANDMED ────────────────────────────────────────────────────
+        View EhitaAndmedSektsioon()
+        {
+            nimeCell = UusEntryCell("Nimi", "Sisesta sõbra nimi", Keyboard.Default);
+            emailCell = UusEntryCell("Email", "sober@email.com", Keyboard.Email);
+            telefonCell = UusEntryCell("Telefon", "+372 5XX XXXX", Keyboard.Telephone);
+            kirjeldusCell = UusEntryCell("Kirjeldus", "Kirjeldus sõbra kohta", Keyboard.Default);
 
-            var nupudView = new ViewCell
+            return EhitaKaart("Sõbra andmed", new TableSection
+ {
+                nimeCell, emailCell, telefonCell, kirjeldusCell
+            });
+        }
+
+        // ── SÕNUM + TOIMINGUD ─────────────────────────────────────────
+        View EhitaSõnumSektsioon()
+        {
+            sõnumCell = UusEntryCell("Sõnum", "Kirjuta sõnum siia", Keyboard.Default);
+
+            var nupuRida = new ViewCell
             {
                 View = new HorizontalStackLayout
                 {
-                    Padding = new Thickness(15, 8),
+                    Padding = new Thickness(14, 12),
                     Spacing = 8,
                     Children =
                     {
-                        TeeBtnNupp("📞 Helista", "#6200EE", Helista_Clicked),
-                        TeeBtnNupp("💬 SMS",     "#6200EE", SaadaSms_Clicked),
-                        TeeBtnNupp("📧 Email",   "#6200EE", SaadaEmail_Clicked)
+                        TeePrimaarne("Helista", Helista_Clicked),
+                        TeePrimaarne("SMS", SaadaSms_Clicked),
+                        TeePrimaarne("Email", SaadaEmail_Clicked)
                     }
                 }
             };
 
-            var sõnumSection = new TableSection("✉️ Saada sõnum") { sõnumCell, nupudView };
+            return EhitaKaart("Saada sõnum", new TableSection
+ {
+                sõnumCell, nupuRida
+            });
+        }
 
-            // ---- Tervitus ----
+        // ── TERVITUSED ────────────────────────────────────────────────
+        View EhitaTervitusSektsioon()
+        {
             tervitusLabel = new Label
             {
                 Text = "Vajuta nuppu, et valida juhuslik tervitus",
                 FontSize = 13,
-                TextColor = Colors.Gray,
+                TextColor = TekstHall,
                 LineBreakMode = LineBreakMode.WordWrap,
-                Margin = new Thickness(0, 0, 0, 4)
+                Margin = new Thickness(0, 0, 0, 8)
             };
 
-            var picker = new Picker { Title = "📋 Vali tervitus...", HorizontalOptions = LayoutOptions.Fill };
+            var picker = new Picker
+            {
+                Title = "Vali tervitus...",
+                HorizontalOptions = LayoutOptions.Fill,
+                TextColor = Tekst
+            };
             foreach (var t in tervitused) picker.Items.Add(t);
             picker.SelectedIndexChanged += (s, e) =>
             {
                 if (picker.SelectedIndex >= 0)
                 {
                     valitudTervitus = tervitused[picker.SelectedIndex];
-                    tervitusLabel.Text = $"✅ {valitudTervitus}";
+                    if (tervitusLabel != null)
+                        tervitusLabel.Text = $"Valitud: {valitudTervitus}";
                 }
             };
 
-            var rndNupp = TeeBtnNupp("🎲 Juhuslik", "#03DAC6", ValiTervitus_Clicked);
+            var rndNupp = TeePrimaarne("Juhuslik tervitus", ValiTervitus_Clicked);
             rndNupp.HorizontalOptions = LayoutOptions.Fill;
 
-            var tervitusValikView = new ViewCell
+            var tervitusValikCell = new ViewCell
             {
                 View = new VerticalStackLayout
                 {
-                    Padding = new Thickness(15, 10),
-                    Spacing = 6,
+                    Padding = new Thickness(14, 12),
+                    Spacing = 8,
                     Children = { tervitusLabel, picker, rndNupp }
                 }
             };
-            tervitusValikView.Height = 160;
 
-            var tervitusSaatmineView = new ViewCell
+            var saatmiseNupud = new ViewCell
             {
                 View = new HorizontalStackLayout
                 {
-                    Padding = new Thickness(15, 8),
+                    Padding = new Thickness(14, 10),
                     Spacing = 8,
                     Children =
                     {
-                        TeeBtnNupp("📱 Tervitus SMS",   "#018786", SaadaTervitusSms_Clicked),
-                        TeeBtnNupp("✉️ Tervitus Email", "#018786", SaadaTervitusEmail_Clicked)
-                    }
+                        TeeAccentNupp("SMS tervitus", SaadaTervitusSms_Clicked),
+                        TeeAccentNupp("Email tervitus", SaadaTervitusEmail_Clicked)
+ }
                 }
             };
 
-            var tervitusSection = new TableSection("🎉 Juhuslik tervitus")
-            {
-                tervitusValikView, tervitusSaatmineView
-            };
-
-            // ---- Кнопка Salvesta ----
-            var salvestaView = new ViewCell
-            {
-                View = new VerticalStackLayout
-                {
-                    Padding = new Thickness(15, 10),
-                    Children =
-                    {
-                        TeeBtnNupp("💾 Salvesta kontakt", "#388E3C", Salvesta_Clicked)
-                    }
-                }
-            };
-
-            var salvestaSection = new TableSection { salvestaView };
-
-            // ---- TableView ----
-            var tabelview = new TableView
-            {
-                Intent = TableIntent.Form,
-                Root = new TableRoot
-                {
-                    andmedSection,
-                    sõnumSection,
-                    tervitusSection,
-                    salvestaSection
-                }
-            };
-
-            // ---- Список контактов внизу ----
-            kontaktideNimekiri = new VerticalStackLayout
-            {
-                Padding = new Thickness(15, 10),
-                Spacing = 8
-            };
-
-            var nimekirjaLabel = new Label
-            {
-                Text = "📋 Salvestatud kontaktid",
-                FontSize = 16,
-                FontAttributes = FontAttributes.Bold,
-                Margin = new Thickness(15, 10, 0, 0)
-            };
-
-            fookusEntry = new Entry { IsVisible = false, WidthRequest = 1, HeightRequest = 1 };
-
-            var page = new VerticalStackLayout
-            {
-                Children = { header, tabelview, nimekirjaLabel, kontaktideNimekiri }
-            };
-
-            Content = new ScrollView
-            {
-                Content = new Grid { Children = { page, fookusEntry } }
-            };
-
-            // Загружаем сохранённые контакты
-            UuendaNimekiri();
+            return EhitaKaart("Juhuslik tervitus", new TableSection
+ {
+                tervitusValikCell, saatmiseNupud
+            });
         }
 
-        // ---- Сохранить контакт ----
+        // ── SALVESTA ──────────────────────────────────────────────────
+        View EhitaSalvestaNupp()
+        {
+            // "Salvesta muudatused" — aktiivne ainult kui kontakt on nimekirjast laaditud
+            uuendaBtn = new Button
+            {
+                Text = "Salvesta muudatused",
+                BackgroundColor = Color.FromArgb("#94A3B8"), // hall = mitteaktiivne
+                TextColor = Colors.White,
+                FontSize = 15,
+                FontAttributes = FontAttributes.Bold,
+                CornerRadius = 16,
+                Padding = new Thickness(0, 14),
+                Margin = new Thickness(20, 8, 20, 4),
+                IsEnabled = false
+            };
+            uuendaBtn.Clicked += Salvesta_Clicked;
+
+            // "Uus kontakt" — loob alati uue sloti, ignoreerib laaditavKontaktIndex
+            var uusBtn = new Button
+            {
+                Text = "Uus kontakt",
+                BackgroundColor = Color.FromArgb("#22C55E"),
+                TextColor = Colors.White,
+                FontSize = 15,
+                FontAttributes = FontAttributes.Bold,
+                CornerRadius = 16,
+                Padding = new Thickness(0, 14),
+                Margin = new Thickness(20, 4, 20, 4),
+                Shadow = new Shadow { Brush = new SolidColorBrush(Color.FromArgb("#22C55E")), Offset = new Point(0, 4), Radius = 10, Opacity = 0.4f }
+            };
+            uusBtn.Clicked += SalvestaUus_Clicked;
+
+            var tyhjendaBtn = new Button
+            {
+                Text = "Puhasta väljad",
+                BackgroundColor = Color.FromArgb("#EF4444"),
+                TextColor = Colors.White,
+                FontSize = 15,
+                FontAttributes = FontAttributes.Bold,
+                CornerRadius = 16,
+                Padding = new Thickness(0, 14),
+                Margin = new Thickness(20, 4, 20, 8),
+                Shadow = new Shadow { Brush = new SolidColorBrush(Color.FromArgb("#EF4444")), Offset = new Point(0, 4), Radius = 10, Opacity = 0.4f }
+            };
+            tyhjendaBtn.Clicked += (s, e) => TyhjendaVorm();
+
+            return new VerticalStackLayout { Children = { uuendaBtn, uusBtn, tyhjendaBtn } };
+        }
+
+        Label EhitaNimekirjaLabel()
+        {
+            return new Label
+            {
+                Text = "Salvestatud kontaktid",
+                FontSize = 18,
+                FontAttributes = FontAttributes.Bold,
+                TextColor = Tekst,
+                Margin = new Thickness(20, 20, 20, 4)
+            };
+        }
+
+        VerticalStackLayout EhitaNimekiri()
+        {
+            kontaktideNimekiri = new VerticalStackLayout
+            {
+                Padding = new Thickness(16, 4, 16, 24),
+                Spacing = 10
+            };
+            return kontaktideNimekiri;
+        }
+
+        // ════════════════════════════════════════════════════════════
+        //  SALVESTA / KUSTUTA / LAADI
+        // ════════════════════════════════════════════════════════════
+        // Uuendab olemasolevat kontakti (aktiivne ainult kui kontakt on laaditud)
         async void Salvesta_Clicked(object? sender, EventArgs e)
+        {
+            if (laaditavKontaktIndex < 0)
+            {
+                await DisplayAlertAsync("Viga", "Ükski kontakt pole valitud!", "OK");
+                return;
+            }
+            string nimi = nimeCell?.Text ?? "";
+            if (string.IsNullOrWhiteSpace(nimi))
+            {
+                await DisplayAlertAsync("Viga", "Sisesta vähemalt nimi!", "OK");
+                return;
+            }
+            SalvestaIndeksile(laaditavKontaktIndex);
+            TyhjendaVorm();
+            UuendaNimekiri();
+            await DisplayAlertAsync("Uuendatud", "Kontakt on uuendatud!", "OK");
+        }
+
+        // Loob alati uue kontakti (ignoreerib laaditud kontakti)
+        async void SalvestaUus_Clicked(object? sender, EventArgs e)
         {
             string nimi = nimeCell?.Text ?? "";
             if (string.IsNullOrWhiteSpace(nimi))
@@ -230,33 +381,32 @@ namespace _6osaaa
                 await DisplayAlertAsync("Viga", "Sisesta vähemalt nimi!", "OK");
                 return;
             }
-
-            // Ищем свободный слот или перезаписываем редактируемый
-            int index = laaditavKontaktIndex >= 0 ? laaditavKontaktIndex : LeidaVabaSlot();
-
+            int index = LeidaVabaSlot();
             if (index < 0)
             {
                 await DisplayAlertAsync("Viga", "Kontaktide limit on 5!", "OK");
                 return;
             }
-
-            Preferences.Set($"kontakt_{index}_nimi", nimeCell?.Text ?? "");
-            Preferences.Set($"kontakt_{index}_email", emailCell?.Text ?? "");
-            Preferences.Set($"kontakt_{index}_telefon", telefonCell?.Text ?? "");
-            Preferences.Set($"kontakt_{index}_kirjeldus", kirjeldusCell?.Text ?? "");
-            Preferences.Set($"kontakt_{index}_foto", fotoPath);
-            Preferences.Set($"kontakt_{index}_on", true);
-
+            SalvestaIndeksile(index);
             TyhjendaVorm();
             UuendaNimekiri();
-            await DisplayAlertAsync("OK", "Kontakt salvestatud!", "OK");
+            await DisplayAlertAsync("Salvestatud", "Uus kontakt lisatud!", "OK");
+        }
+
+        void SalvestaIndeksile(int index)
+        {
+            Preferences.Set($"k{index}_nimi", nimeCell?.Text ?? "");
+            Preferences.Set($"k{index}_email", emailCell?.Text ?? "");
+            Preferences.Set($"k{index}_tel", telefonCell?.Text ?? "");
+            Preferences.Set($"k{index}_kirj", kirjeldusCell?.Text ?? "");
+            Preferences.Set($"k{index}_foto", fotoPath);
+            Preferences.Set($"k{index}_on", true);
         }
 
         int LeidaVabaSlot()
         {
             for (int i = 0; i < 5; i++)
-                if (!Preferences.Get($"kontakt_{i}_on", false))
-                    return i;
+                if (!Preferences.Get($"k{i}_on", false)) return i;
             return -1;
         }
 
@@ -269,147 +419,192 @@ namespace _6osaaa
             if (sõnumCell != null) sõnumCell.Text = "";
             fotoPath = "";
             laaditavKontaktIndex = -1;
-            if (ringFoto != null)
-                ringFoto.Source = ImageSource.FromFile("dotnet_bot.png");
+            if (ringFoto != null) ringFoto.Source = ImageSource.FromFile("dotnet_bot.png");
+            if (uuendaBtn != null)
+            {
+                uuendaBtn.IsEnabled = false;
+                uuendaBtn.BackgroundColor = Color.FromArgb("#94A3B8");
+                uuendaBtn.Shadow = null;
+            }
         }
- 
+
         void UuendaNimekiri()
         {
             if (kontaktideNimekiri == null) return;
             kontaktideNimekiri.Children.Clear();
 
+            bool keegi = false;
             for (int i = 0; i < 5; i++)
             {
-                if (!Preferences.Get($"kontakt_{i}_on", false)) continue;
+                if (!Preferences.Get($"k{i}_on", false)) continue;
+                keegi = true;
+                string nimi = Preferences.Get($"k{i}_nimi", "");
+                string email = Preferences.Get($"k{i}_email", "");
+                string tel = Preferences.Get($"k{i}_tel", "");
+                string foto = Preferences.Get($"k{i}_foto", "");
+                int idx = i;
 
-                string nimi = Preferences.Get($"kontakt_{i}_nimi", "");
-                string email = Preferences.Get($"kontakt_{i}_email", "");
-                string foto = Preferences.Get($"kontakt_{i}_foto", "");
-                int idx = i; // захват для лямбды
-
-                // Фото контакта
                 var img = new Image
                 {
-                    WidthRequest = 48,
-                    HeightRequest = 48,
+                    WidthRequest = 52,
+                    HeightRequest = 52,
                     Aspect = Aspect.AspectFill,
-                    Clip = new EllipseGeometry { Center = new Point(24, 24), RadiusX = 24, RadiusY = 24 }
+                    Clip = new EllipseGeometry { Center = new Point(26, 26), RadiusX = 26, RadiusY = 26 }
                 };
                 img.Source = !string.IsNullOrEmpty(foto) && File.Exists(foto)
                     ? ImageSource.FromFile(foto)
                     : ImageSource.FromFile("dotnet_bot.png");
 
-                var nimeTekst = new Label
-                {
-                    Text = nimi,
-                    FontSize = 15,
-                    FontAttributes = FontAttributes.Bold,
-                    VerticalOptions = LayoutOptions.Center
-                };
+                var nimeLbl = new Label { Text = nimi, FontSize = 15, FontAttributes = FontAttributes.Bold, TextColor = Tekst };
+                var emailLbl = new Label { Text = email, FontSize = 12, TextColor = TekstHall };
+                var telLbl = new Label { Text = tel, FontSize = 12, TextColor = TekstHall };
 
-                var emailTekst = new Label
-                {
-                    Text = email,
-                    FontSize = 12,
-                    TextColor = Colors.Gray,
-                    VerticalOptions = LayoutOptions.Center
-                };
-
-                // Кнопка удалить
                 var kustutaBtn = new Button
                 {
-                    Text = "🗑️",
+                    Text = "X",
                     BackgroundColor = Colors.Transparent,
                     TextColor = Colors.Red,
-                    FontSize = 18,
+                    FontSize = 20,
                     Padding = 0,
                     HorizontalOptions = LayoutOptions.End,
                     VerticalOptions = LayoutOptions.Center
                 };
                 kustutaBtn.Clicked += (s, e) => KustutaKontakt(idx);
 
+                var info = new VerticalStackLayout
+                {
+                    VerticalOptions = LayoutOptions.Center,
+                    Spacing = 1,
+                    Children = { nimeLbl, emailLbl, telLbl }
+                };
+
                 var rida = new Grid
                 {
                     ColumnDefinitions =
                     {
-                        new ColumnDefinition { Width = 56 },
+                        new ColumnDefinition { Width = 60 },
                         new ColumnDefinition { Width = GridLength.Star },
-                        new ColumnDefinition { Width = 40 }
+                        new ColumnDefinition { Width = 44 }
                     },
-                    BackgroundColor = Color.FromArgb("#F8F8F8"),
-                    Padding = new Thickness(8),
-                    Children = { img, new VerticalStackLayout { Children = { nimeTekst, emailTekst } }, kustutaBtn }
+                    Padding = new Thickness(12),
+                    BackgroundColor = Kaart
                 };
-                Microsoft.Maui.Controls.Grid.SetColumn((View)img, 0);
-                Microsoft.Maui.Controls.Grid.SetColumn((View)rida.Children[1], 1);
-                Microsoft.Maui.Controls.Grid.SetColumn((View)kustutaBtn, 2);
+                rida.Add(img, 0, 0);
+                rida.Add(info, 1, 0);
+                rida.Add(kustutaBtn, 2, 0);
 
-                // Нажатие на контакт — загрузить в форму
                 var tap = new TapGestureRecognizer();
                 tap.Tapped += (s, e) => LaadKontakt(idx);
                 rida.GestureRecognizers.Add(tap);
 
-                // Граница вокруг строки
-                var border = new Border
+                var kaart = new Border
                 {
                     Content = rida,
-                    StrokeShape = new RoundRectangle { CornerRadius = 10 },
-                    Stroke = Color.FromArgb("#E0E0E0"),
-                    StrokeThickness = 1
+                    BackgroundColor = Kaart,
+                    StrokeShape = new RoundRectangle { CornerRadius = 16 },
+                    Stroke = Color.FromArgb("#E5E1FF"),
+                    StrokeThickness = 1,
+                    Shadow = new Shadow
+                    {
+                        Brush = new SolidColorBrush(Color.FromArgb("#5B4FE9")),
+                        Offset = new Point(0, 2),
+                        Radius = 8,
+                        Opacity = 0.08f
+                    }
                 };
 
-                kontaktideNimekiri.Children.Add(border);
+                kontaktideNimekiri.Children.Add(kaart);
+            }
+
+            if (!keegi)
+            {
+                kontaktideNimekiri.Children.Add(new Label
+                {
+                    Text = "Kontakte pole veel lisatud.\nVäljasta vormi ja vajuta Salvesta.",
+                    TextColor = TekstHall,
+                    FontSize = 13,
+                    HorizontalOptions = LayoutOptions.Center,
+                    HorizontalTextAlignment = TextAlignment.Center,
+                    Margin = new Thickness(0, 10)
+                });
             }
         }
 
         void LaadKontakt(int i)
         {
             laaditavKontaktIndex = i;
-            if (nimeCell != null) nimeCell.Text = Preferences.Get($"kontakt_{i}_nimi", "");
-            if (emailCell != null) emailCell.Text = Preferences.Get($"kontakt_{i}_email", "");
-            if (telefonCell != null) telefonCell.Text = Preferences.Get($"kontakt_{i}_telefon", "");
-            if (kirjeldusCell != null) kirjeldusCell.Text = Preferences.Get($"kontakt_{i}_kirjeldus", "");
-            fotoPath = Preferences.Get($"kontakt_{i}_foto", "");
-
+            if (uuendaBtn != null)
+            {
+                uuendaBtn.IsEnabled = true;
+                uuendaBtn.BackgroundColor = Color.FromArgb("#5B4FE9");
+                uuendaBtn.Shadow = new Shadow { Brush = new SolidColorBrush(Color.FromArgb("#5B4FE9")), Offset = new Point(0, 4), Radius = 10, Opacity = 0.4f };
+            }
+            if (nimeCell != null) nimeCell.Text = Preferences.Get($"k{i}_nimi", "");
+            if (emailCell != null) emailCell.Text = Preferences.Get($"k{i}_email", "");
+            if (telefonCell != null) telefonCell.Text = Preferences.Get($"k{i}_tel", "");
+            if (kirjeldusCell != null) kirjeldusCell.Text = Preferences.Get($"k{i}_kirj", "");
+            fotoPath = Preferences.Get($"k{i}_foto", "");
             if (ringFoto != null)
                 ringFoto.Source = !string.IsNullOrEmpty(fotoPath) && File.Exists(fotoPath)
                     ? ImageSource.FromFile(fotoPath)
                     : ImageSource.FromFile("dotnet_bot.png");
-
-            // Скролл наверх не нужен — просто форма заполнена
         }
 
         void KustutaKontakt(int i)
         {
-            Preferences.Remove($"kontakt_{i}_nimi");
-            Preferences.Remove($"kontakt_{i}_email");
-            Preferences.Remove($"kontakt_{i}_telefon");
-            Preferences.Remove($"kontakt_{i}_kirjeldus");
-            Preferences.Remove($"kontakt_{i}_foto");
-            Preferences.Set($"kontakt_{i}_on", false);
+            Preferences.Remove($"k{i}_nimi");
+            Preferences.Remove($"k{i}_email");
+            Preferences.Remove($"k{i}_tel");
+            Preferences.Remove($"k{i}_kirj");
+            Preferences.Remove($"k{i}_foto");
+            Preferences.Set($"k{i}_on", false);
             if (laaditavKontaktIndex == i) TyhjendaVorm();
             UuendaNimekiri();
         }
 
-        // ---- Фото ----
+        // ════════════════════════════════════════════════════════════
+        //  FOTO
+        // ════════════════════════════════════════════════════════════
         async void TeeFoto_Clicked(object? sender, EventArgs e)
         {
             try
             {
                 if (!MediaPicker.Default.IsCaptureSupported)
                 {
-                    await DisplayAlertAsync("Viga", "Kaamera pole toetatud", "OK");
+                    await DisplayAlertAsync("Info", "Kaamera pole toetatud. Kasuta galeriid.", "OK");
                     return;
                 }
-                var photo = await MediaPicker.Default.CapturePhotoAsync();
+
+                FileResult? photo = null;
+                try
+                {
+                    photo = await MediaPicker.Default.CapturePhotoAsync();
+                }
+                catch (OperationCanceledException)
+                {
+                    return; // kasutaja sulges — OK
+                }
+                catch
+                {
+                    await DisplayAlertAsync("Info", "Kaamera ei tööta emulaatoril. Kasuta \'Galeriist\'.", "OK");
+                    return;
+                }
+
                 if (photo == null) return;
-                fotoPath = System.IO.Path.Combine(FileSystem.AppDataDirectory, photo.FileName);
-                using var stream = await photo.OpenReadAsync();
-                using var newStream = File.OpenWrite(fotoPath);
-                await stream.CopyToAsync(newStream);
-                if (ringFoto != null) ringFoto.Source = ImageSource.FromFile(fotoPath);
+
+                var destPath = System.IO.Path.Combine(FileSystem.AppDataDirectory, photo.FileName);
+                using (var src = await photo.OpenReadAsync())
+                using (var dst = File.OpenWrite(destPath))
+                    await src.CopyToAsync(dst);
+
+                fotoPath = destPath;
+                if (ringFoto != null)
+                    ringFoto.Source = ImageSource.FromFile(fotoPath);
             }
-            catch (Exception ex) { await DisplayAlertAsync("Viga", ex.Message, "OK"); }
+            catch (Exception ex)
+            {
+                await DisplayAlertAsync("Viga", ex.Message, "OK");
+            }
         }
 
         async void ValiGaleriist_Clicked(object? sender, EventArgs e)
@@ -424,11 +619,14 @@ namespace _6osaaa
             catch (Exception ex) { await DisplayAlertAsync("Viga", ex.Message, "OK"); }
         }
 
-        // ---- Helista / SMS / Email ----
+        // ════════════════════════════════════════════════════════════
+        //  HELISTA / SMS / EMAIL
+        // ════════════════════════════════════════════════════════════
         async void Helista_Clicked(object? sender, EventArgs e)
         {
             string phone = telefonCell?.Text ?? "";
-            if (string.IsNullOrWhiteSpace(phone)) { await DisplayAlertAsync("Viga", "Sisesta telefoninumber!", "OK"); return; }
+            if (string.IsNullOrWhiteSpace(phone))
+            { await DisplayAlertAsync("Viga", "Sisesta telefoninumber!", "OK"); return; }
             if (PhoneDialer.Default.IsSupported) PhoneDialer.Default.Open(phone);
             else await DisplayAlertAsync("Viga", "Helistamine pole toetatud", "OK");
         }
@@ -437,8 +635,10 @@ namespace _6osaaa
         {
             string phone = telefonCell?.Text ?? "";
             string msg = sõnumCell?.Text ?? "Tere!";
-            if (string.IsNullOrWhiteSpace(phone)) { await DisplayAlertAsync("Viga", "Sisesta telefoninumber!", "OK"); return; }
-            if (Sms.Default.IsComposeSupported) await Sms.Default.ComposeAsync(new SmsMessage(msg, phone));
+            if (string.IsNullOrWhiteSpace(phone))
+            { await DisplayAlertAsync("Viga", "Sisesta telefoninumber!", "OK"); return; }
+            if (Sms.Default.IsComposeSupported)
+                await Sms.Default.ComposeAsync(new SmsMessage(msg, phone));
             else await DisplayAlertAsync("Viga", "SMS pole toetatud", "OK");
         }
 
@@ -447,53 +647,178 @@ namespace _6osaaa
             string email = emailCell?.Text ?? "";
             string nimi = nimeCell?.Text ?? "Sõber";
             string msg = sõnumCell?.Text ?? "Tere!";
-            if (string.IsNullOrWhiteSpace(email)) { await DisplayAlertAsync("Viga", "Sisesta emailiaadress!", "OK"); return; }
-            var mail = new EmailMessage { Subject = $"Sõnum sõbrale {nimi}", Body = msg, BodyFormat = EmailBodyFormat.PlainText, To = new List<string> { email } };
+            string kirjeldus = kirjeldusCell?.Text ?? "";
+
+            if (string.IsNullOrWhiteSpace(email))
+            { await DisplayAlertAsync("Viga", "Sisesta emailiaadress!", "OK"); return; }
+
+            string body = string.IsNullOrWhiteSpace(kirjeldus)
+                           ? msg
+                           : $"{msg}\n\n---\nKirjeldus: {kirjeldus}";
+
+            var mail = new EmailMessage
+            {
+                Subject = $"Sõnum sõbrale {nimi}",
+                Body = body,
+                BodyFormat = EmailBodyFormat.PlainText,
+                To = new List<string> { email }
+            };
             if (Email.Default.IsComposeSupported) await Email.Default.ComposeAsync(mail);
             else await DisplayAlertAsync("Viga", "Email pole toetatud", "OK");
         }
 
-        // ---- Tervitus ----
+        // ════════════════════════════════════════════════════════════
+        //  TERVITUSED
+        // ════════════════════════════════════════════════════════════
         void ValiTervitus_Clicked(object? sender, EventArgs e)
         {
             valitudTervitus = tervitused[new Random().Next(tervitused.Count)];
-            if (tervitusLabel != null) tervitusLabel.Text = $"✅ {valitudTervitus}";
+            if (tervitusLabel != null) tervitusLabel.Text = $"Valitud: {valitudTervitus}";
         }
 
         async void SaadaTervitusSms_Clicked(object? sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(valitudTervitus)) { await DisplayAlertAsync("Viga", "Vali esmalt tervitus!", "OK"); return; }
+            if (string.IsNullOrWhiteSpace(valitudTervitus))
+            { await DisplayAlertAsync("Viga", "Vali esmalt tervitus!", "OK"); return; }
             string phone = telefonCell?.Text ?? "";
-            if (string.IsNullOrWhiteSpace(phone)) { await DisplayAlertAsync("Viga", "Sisesta telefoninumber!", "OK"); return; }
-            if (Sms.Default.IsComposeSupported) await Sms.Default.ComposeAsync(new SmsMessage(valitudTervitus, phone));
+            if (string.IsNullOrWhiteSpace(phone))
+            { await DisplayAlertAsync("Viga", "Sisesta telefoninumber!", "OK"); return; }
+            if (Sms.Default.IsComposeSupported)
+                await Sms.Default.ComposeAsync(new SmsMessage(valitudTervitus, phone));
             else await DisplayAlertAsync("Viga", "SMS pole toetatud", "OK");
         }
 
         async void SaadaTervitusEmail_Clicked(object? sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(valitudTervitus)) { await DisplayAlertAsync("Viga", "Vali esmalt tervitus!", "OK"); return; }
+            if (string.IsNullOrWhiteSpace(valitudTervitus))
+            { await DisplayAlertAsync("Viga", "Vali esmalt tervitus!", "OK"); return; }
             string email = emailCell?.Text ?? "";
             string nimi = nimeCell?.Text ?? "Sõber";
-            if (string.IsNullOrWhiteSpace(email)) { await DisplayAlertAsync("Viga", "Sisesta emailiaadress!", "OK"); return; }
-            var mail = new EmailMessage { Subject = $"🎉 Tervitus sõbrale {nimi}", Body = valitudTervitus, BodyFormat = EmailBodyFormat.PlainText, To = new List<string> { email } };
+            if (string.IsNullOrWhiteSpace(email))
+            { await DisplayAlertAsync("Viga", "Sisesta emailiaadress!", "OK"); return; }
+            var mail = new EmailMessage
+            {
+                Subject = $" Tervitus sõbrale {nimi}",
+                Body = valitudTervitus,
+                BodyFormat = EmailBodyFormat.PlainText,
+                To = new List<string> { email }
+            };
             if (Email.Default.IsComposeSupported) await Email.Default.ComposeAsync(mail);
             else await DisplayAlertAsync("Viga", "Email pole toetatud", "OK");
         }
 
-        // ---- Вспомогательные ----
-        Button TeeBtnNupp(string tekst, string värv, EventHandler handler)
+        // ════════════════════════════════════════════════════════════
+        //  ABImeetodid (UI factory)
+        // ════════════════════════════════════════════════════════════
+
+        /// Mähib TableSection valge ümardatud kaarti
+        View EhitaKaart(string pealkiri, TableSection sektsioon)
+        {
+            var label = new Label
+            {
+                Text = pealkiri,
+                FontSize = 13,
+                FontAttributes = FontAttributes.Bold,
+                TextColor = Primaarne,
+                Margin = new Thickness(20, 18, 20, 4)
+            };
+
+            var tabel = new TableView
+            {
+                Intent = TableIntent.Form,
+                Root = new TableRoot { sektsioon },
+                BackgroundColor = Colors.Transparent,
+                HasUnevenRows = true
+            };
+
+            var border = new Border
+            {
+                Content = tabel,
+                BackgroundColor = Kaart,
+                StrokeShape = new RoundRectangle { CornerRadius = 20 },
+                Stroke = Color.FromArgb("#E5E1FF"),
+                StrokeThickness = 1,
+                Margin = new Thickness(16, 0, 16, 0),
+                Shadow = new Shadow
+                {
+                    Brush = new SolidColorBrush(Color.FromArgb("#5B4FE9")),
+                    Offset = new Point(0, 3),
+                    Radius = 10,
+                    Opacity = 0.07f
+                }
+            };
+
+            return new VerticalStackLayout { Children = { label, border } };
+        }
+
+        EntryCell UusEntryCell(string label, string placeholder, Keyboard keyboard)
+        {
+            return new EntryCell
+            {
+                Label = label,
+                Placeholder = placeholder,
+                Keyboard = keyboard
+            };
+        }
+
+        Button TeePrimaarne(string tekst, EventHandler handler)
         {
             var btn = new Button
             {
                 Text = tekst,
-                BackgroundColor = Color.FromArgb(värv),
+                BackgroundColor = Primaarne,
                 TextColor = Colors.White,
-                CornerRadius = 20,
+                CornerRadius = 14,
                 FontSize = 13,
-                Padding = new Thickness(12, 8)
+                FontAttributes = FontAttributes.Bold,
+                Padding = new Thickness(12, 9),
+                Shadow = new Shadow
+                {
+                    Brush = new SolidColorBrush(Primaarne),
+                    Offset = new Point(0, 3),
+                    Radius = 8,
+                    Opacity = 0.35f
+                }
             };
             btn.Clicked += handler;
             return btn;
         }
+
+        Button TeeAccentNupp(string tekst, EventHandler handler)
+        {
+            var btn = new Button
+            {
+                Text = tekst,
+                BackgroundColor = Accent,
+                TextColor = Colors.White,
+                CornerRadius = 14,
+                FontSize = 13,
+                FontAttributes = FontAttributes.Bold,
+                Padding = new Thickness(12, 9)
+            };
+            btn.Clicked += handler;
+            return btn;
+        }
+
+        Button TeeGhostNupp(string tekst, EventHandler handler)
+        {
+            var btn = new Button
+            {
+                Text = tekst,
+                BackgroundColor = Color.FromArgb("#2A1D80"),
+                TextColor = Colors.White,
+                CornerRadius = 20,
+                FontSize = 12,
+                Padding = new Thickness(14, 8),
+                BorderColor = Color.FromArgb("#7B72F0"),
+                BorderWidth = 1
+            };
+            btn.Clicked += handler;
+            return btn;
+        }
+
+        // Совместимый хелпер для DisplayAlert
+        Task DisplayAlertAsync(string title, string message, string cancel)
+            => DisplayAlert(title, message, cancel);
     }
 }
